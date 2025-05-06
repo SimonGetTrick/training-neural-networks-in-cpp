@@ -40,7 +40,7 @@ MultiLayerPerceptron::MultiLayerPerceptron(std::vector<size_t> layers, double bi
         values.push_back(std::vector<double>(layers[i],0.0));
         d.push_back(std::vector<double>(layers[i],0.0));
         network.push_back(std::vector<Perceptron>());
-        if (i > 0)   //network[0] is the input layer,so it has no neurons
+        if (i > 0)   // network[0] is the input layer, so it has no neurons
             for (size_t j = 0; j < layers[i]; j++)
                 network[i].push_back(Perceptron(layers[i-1], bias));
     }
@@ -76,36 +76,46 @@ std::vector<double> MultiLayerPerceptron::run(std::vector<double> x) {
     return values.back();
 }
 
-
-// Challenge: Implement the bp() function:
-
-
 // Run a single (x,y) pair with the backpropagation algorithm.
 double MultiLayerPerceptron::bp(std::vector<double> x, std::vector<double> y){
     
     // Backpropagation Step by Step:
     
     // STEP 1: Feed a sample to the network
+    std::vector<double> outputs = run(x);
     
     // STEP 2: Calculate the MSE
     double MSE = 0.0;
-    
+    std::vector<double> error;
+    for (size_t i = 0; i < y.size(); i++){
+        error.push_back(y[i] - outputs[i]);
+        MSE += error[i] * error[i];
+    }
+    MSE /= layers.back();
+
     // STEP 3: Calculate the output error terms
-    
+    for (size_t i = 0; i < outputs.size(); i++)
+        d.back()[i] = outputs[i] * (1 - outputs[i]) * (error[i]);
+
     // STEP 4: Calculate the error term of each unit on each layer    
     for (size_t i = network.size()-2; i > 0; i--)
         for (size_t h = 0; h < network[i].size(); h++){
             double fwd_error = 0.0;
             for (size_t k = 0; k < layers[i+1]; k++)
-                ; // fill in the blank
-            ; // fill in the blank
+                fwd_error += network[i+1][k].weights[h] * d[i+1][k];
+            d[i][h] = values[i][h] * (1-values[i][h]) * fwd_error;
         }
     
     // STEPS 5 & 6: Calculate the deltas and update the weights
     for (size_t i = 1; i < network.size(); i++)
         for (size_t j = 0; j < layers[i]; j++)
             for (size_t k = 0; k < layers[i-1]+1; k++){
-                // fill in the blank
+                double delta;
+                if (k == layers[i-1])
+                    delta = eta * d[i][j] * bias;
+                else
+                    delta = eta * d[i][j] * values[i-1][k];
+                network[i][j].weights[k] += delta;
             }
     return MSE;
 }
